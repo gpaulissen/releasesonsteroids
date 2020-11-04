@@ -1,0 +1,149 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.axelfontaine.releasesonsteroids</groupId>
+    <artifactId>releasesonsteroids-parent</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
+
+    <properties>
+        <revision>1.0-SNAPSHOT</revision>
+
+        <!--releaseRepoUrl>http://localhost:8080/nexus/content/repositories/releases/</releaseRepoUrl-->
+        <releaseRepoUrl>file:///C:/usr/local/maven-repository/releases</releaseRepoUrl>
+        <!--snapshotRepoUrl>http://localhost:8080/nexus/content/repositories/snapshots/</snapshotRepoUrl-->
+        <snapshotRepoUrl>file:///C:/usr/local/maven-repository/snapshots</snapshotRepoUrl>
+        <deployRepoUrl>${releaseRepoUrl}</deployRepoUrl>
+
+        <releaseRepoId>releases-repo</releaseRepoId>
+        <snapshotRepoId>snapshots-repo</snapshotRepoId>
+        <deployRepoId>${releaseRepoId}</deployRepoId>
+
+        <isRelease>true</isRelease>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>snapshot-deploy-url-override</id>
+            <activation>
+                <property>
+                    <name>!revision</name>
+                </property>
+            </activation>
+            <properties>
+                <deployRepoId>${snapshotRepoId}</deployRepoId>
+                <deployRepoUrl>${snapshotRepoUrl}</deployRepoUrl>
+                <isRelease>false</isRelease>
+            </properties>
+        </profile>
+    </profiles>
+
+    <modules>
+        <module>releasesonsteroids-core</module>
+        <module>releasesonsteroids-sample</module>
+    </modules>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>${snapshotRepoId}</id>
+            <name>Snapshots Repo</name>
+            <url>${snapshotRepoUrl}</url>
+        </snapshotRepository>
+        <repository>
+            <id>${releaseRepoId}</id>
+            <name>Release Repo</name>
+            <url>${releaseRepoUrl}</url>
+        </repository>
+    </distributionManagement>
+
+    <scm>
+        <connection>scm:svn:http://localhost:8888/svn/releasesonsteroids/trunk</connection>
+        <developerConnection>scm:svn:http://localhost:8888/svn/releasesonsteroids/trunk</developerConnection>
+    </scm>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.4.3</version>
+                <executions>
+                    <execution>
+                        <id>replace-pom-placeholder</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}</directory>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                            <outputDirectory>${project.build.directory}/pom-install-deploy-fix</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.3.1</version>
+                <executions>
+                    <execution>
+                        <id>overwrite-pom</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>pom</packaging>
+                            <file>target/pom-install-deploy-fix/pom.xml</file>
+                            <pomFile>target/pom-install-deploy-fix/pom.xml</pomFile>
+                            <version>${project.version}</version>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <updateReleaseInfo>${isRelease}</updateReleaseInfo>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>overwrite-pom</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy-file</goal>
+                        </goals>
+                        <configuration>
+                            <packaging>pom</packaging>
+                            <file>target/pom-install-deploy-fix/pom.xml</file>
+                            <pomFile>target/pom-install-deploy-fix/pom.xml</pomFile>
+                            <repositoryId>${deployRepoId}</repositoryId>
+                            <url>${deployRepoUrl}</url>
+                            <version>${project.version}</version>
+                            <updateReleaseInfo>${isRelease}</updateReleaseInfo>
+                            <uniqueVersion>false</uniqueVersion>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>1.4</version>
+                <configuration>
+                    <tag>${project.artifactId}-${revision}</tag>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
